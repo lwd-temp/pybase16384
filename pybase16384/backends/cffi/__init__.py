@@ -11,6 +11,11 @@ __version__ = "0.1.0"
 encode_len = lib.base16384_encode_len
 decode_len = lib.base16384_decode_len
 
+ENCBUFSZ = lib.get_encsize()
+DECBUFSZ = lib.get_decsize()
+FLAG_NOHEADER = lib.BASE16384_FLAG_NOHEADER_()
+FLAG_SUM_CHECK_ON_REMAIN = lib.BASE16384_FLAG_SUM_CHECK_ON_REMAIN_()
+SIMPLE_SUM_INIT_VALUE = lib.BASE16384_SIMPLE_SUM_INIT_VALUE_()
 
 # -----------------low level api------------------------------
 def _encode(data: bytes) -> bytes:
@@ -24,9 +29,7 @@ def _encode(data: bytes) -> bytes:
 
 
 def _encode_into(data: bytes, out: bytearray) -> int:
-    return lib.base16384_encode(
-        ffi.from_buffer(data), len(data), ffi.from_buffer(out)
-    )
+    return lib.base16384_encode(ffi.from_buffer(data), len(data), ffi.from_buffer(out))
 
 
 def _decode(data: bytes) -> bytes:
@@ -40,9 +43,7 @@ def _decode(data: bytes) -> bytes:
 
 
 def _decode_into(data: bytes, out: bytearray) -> int:
-    return lib.base16384_decode(
-        ffi.from_buffer(data), len(data), ffi.from_buffer(out)
-    )
+    return lib.base16384_decode(ffi.from_buffer(data), len(data), ffi.from_buffer(out))
 
 
 def is_64bits() -> bool:
@@ -92,9 +93,7 @@ def encode_file(input: IO, output: IO, write_head: bool = False, buf_rate: int =
                 input.seek(-size, 1)
                 continue
 
-        count = lib.base16384_encode(
-            ffi.from_buffer(chunk), size, output_buf
-        )
+        count = lib.base16384_encode(ffi.from_buffer(chunk), size, output_buf)
         output.write(ffi.unpack(output_buf, count))
         if size < 7:
             break
@@ -146,9 +145,7 @@ def decode_file(input: IO, output: IO, buf_rate: int = 10):
             else:
                 input.seek(-2, 1)
 
-        count = lib.base16384_decode(
-            ffi.from_buffer(chunk), size, output_buf
-        )
+        count = lib.base16384_decode(ffi.from_buffer(chunk), size, output_buf)
         output.write(ffi.unpack(output_buf, count))
 
 
@@ -176,13 +173,23 @@ def err_to_str(ret) -> str:
         return "base16384_err_open_input_file"
     elif ret == lib.base16384_err_map_input_file:
         return "base16384_err_map_input_file"
+    elif ret == lib.base16384_err_read_file:
+        return "base16384_err_read_file"
+    elif ret == lib.base16384_err_invalid_file_name:
+        return "base16384_err_invalid_file_name"
+    elif ret == lib.base16384_err_invalid_file_name:
+        return "base16384_err_invalid_file_name"
+    elif ret == lib.base16384_err_invalid_commandline_parameter:
+        return "base16384_err_invalid_commandline_parameter"
+    elif ret == lib.base16384_err_invalid_decoding_checksum:
+        return "base16384_err_invalid_decoding_checksum"
 
 
 def encode_local_file(inp, out) -> None:
     inp_name: bytes = ensure_bytes(inp)
     out_name: bytes = ensure_bytes(out)
-    encbuf = ffi.new(f"char[{lib.get_encsize()}]")
-    decbuf = ffi.new(f"char[{lib.get_decsize()}]")
+    encbuf = ffi.new(f"char[{ENCBUFSZ}]")
+    decbuf = ffi.new(f"char[{DECBUFSZ}]")
     ret = lib.base16384_encode_file(
         ffi.from_buffer(inp_name), ffi.from_buffer(out_name), encbuf, decbuf
     )
@@ -193,8 +200,8 @@ def encode_local_file(inp, out) -> None:
 def decode_local_file(inp, out) -> None:
     inp_name: bytes = ensure_bytes(inp)
     out_name: bytes = ensure_bytes(out)
-    encbuf = ffi.new(f"char[{lib.get_encsize()}]")
-    decbuf = ffi.new(f"char[{lib.get_decsize()}]")
+    encbuf = ffi.new(f"char[{ENCBUFSZ}]")
+    decbuf = ffi.new(f"char[{DECBUFSZ}]")
     ret = lib.base16384_decode_file(
         ffi.from_buffer(inp_name), ffi.from_buffer(out_name), encbuf, decbuf
     )
@@ -203,16 +210,56 @@ def decode_local_file(inp, out) -> None:
 
 
 def encode_fd(inp: int, out: int) -> None:
-    encbuf = ffi.new(f"char[{lib.get_encsize()}]")
-    decbuf = ffi.new(f"char[{lib.get_decsize()}]")
+    encbuf = ffi.new(f"char[{ENCBUFSZ}]")
+    decbuf = ffi.new(f"char[{DECBUFSZ}]")
     ret = lib.base16384_encode_fd(inp, out, encbuf, decbuf)
     if ret != lib.base16384_err_ok:
         raise ValueError(err_to_str(ret))
 
 
 def decode_fd(inp: int, out: int) -> None:
-    encbuf = ffi.new(f"char[{lib.get_encsize()}]")
-    decbuf = ffi.new(f"char[{lib.get_decsize()}]")
+    encbuf = ffi.new(f"char[{ENCBUFSZ}]")
+    decbuf = ffi.new(f"char[{DECBUFSZ}]")
     ret = lib.base16384_decode_fd(inp, out, encbuf, decbuf)
+    if ret != lib.base16384_err_ok:
+        raise ValueError(err_to_str(ret))
+
+# detail
+def encode_local_file_detailed(inp, out, flag: int) -> None:
+    inp_name: bytes = ensure_bytes(inp)
+    out_name: bytes = ensure_bytes(out)
+    encbuf = ffi.new(f"char[{ENCBUFSZ}]")
+    decbuf = ffi.new(f"char[{DECBUFSZ}]")
+    ret = lib.base16384_encode_file_detailed(
+        ffi.from_buffer(inp_name), ffi.from_buffer(out_name), encbuf, decbuf, flag
+    )
+    if ret != lib.base16384_err_ok:
+        raise ValueError(err_to_str(ret))
+
+
+def decode_local_file_detailed(inp, out, flag: int) -> None:
+    inp_name: bytes = ensure_bytes(inp)
+    out_name: bytes = ensure_bytes(out)
+    encbuf = ffi.new(f"char[{ENCBUFSZ}]")
+    decbuf = ffi.new(f"char[{DECBUFSZ}]")
+    ret = lib.base16384_decode_file_detailed(
+        ffi.from_buffer(inp_name), ffi.from_buffer(out_name), encbuf, decbuf, flag
+    )
+    if ret != lib.base16384_err_ok:
+        raise ValueError(err_to_str(ret))
+
+
+def encode_fd_detailed(inp: int, out: int, flag: int) -> None:
+    encbuf = ffi.new(f"char[{ENCBUFSZ}]")
+    decbuf = ffi.new(f"char[{DECBUFSZ}]")
+    ret = lib.base16384_encode_fd_detailed(inp, out, encbuf, decbuf, flag)
+    if ret != lib.base16384_err_ok:
+        raise ValueError(err_to_str(ret))
+
+
+def decode_fd_detailed(inp: int, out: int, flag: int) -> None:
+    encbuf = ffi.new(f"char[{ENCBUFSZ}]")
+    decbuf = ffi.new(f"char[{DECBUFSZ}]")
+    ret = lib.base16384_decode_fd_detailed(inp, out, encbuf, decbuf, flag)
     if ret != lib.base16384_err_ok:
         raise ValueError(err_to_str(ret))

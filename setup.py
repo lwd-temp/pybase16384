@@ -50,6 +50,7 @@ if sys.byteorder != "little":
 
 if CPUBIT == 64:
     macro_base.append(("CPUBIT64", None))
+    macro_base.append(("IS_64BIT_PROCESSOR", None))
 else:
     macro_base.append(("CPUBIT32", None))
 

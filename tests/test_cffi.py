@@ -1,7 +1,9 @@
 import sys
+
 sys.path.append(".")
 import os
-os.environ['B14_USE_CFFI'] = '1'
+
+os.environ["B14_USE_CFFI"] = "1"
 import unittest
 from random import randint
 from unittest import TestCase

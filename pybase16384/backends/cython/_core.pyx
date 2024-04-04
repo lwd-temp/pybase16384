@@ -6,18 +6,26 @@ from cpython.object cimport PyObject_HasAttrString
 from libc.stdint cimport int32_t, uint8_t
 
 from pybase16384.backends.cython.base16384 cimport (
-    b14_decode, b14_decode_fd, b14_decode_file, b14_decode_len, b14_encode,
-    b14_encode_fd, b14_encode_file, b14_encode_len,
-    base16384_err_fopen_input_file, base16384_err_fopen_output_file,
-    base16384_err_get_file_size, base16384_err_map_input_file,
-    base16384_err_ok, base16384_err_open_input_file, base16384_err_t, BASE16384_ENCBUFSZ,
-    BASE16384_DECBUFSZ,
+    BASE16384_DECBUFSZ, BASE16384_ENCBUFSZ, BASE16384_FLAG_NOHEADER,
+    BASE16384_FLAG_SUM_CHECK_ON_REMAIN, BASE16384_SIMPLE_SUM_INIT_VALUE,
+    b14_decode, b14_decode_fd, b14_decode_fd_detailed, b14_decode_file,
+    b14_decode_file_detailed, b14_decode_len, b14_encode, b14_encode_fd,
+    b14_encode_fd_detailed, b14_encode_file, b14_encode_file_detailed,
+    b14_encode_len, base16384_err_fopen_input_file,
+    base16384_err_fopen_output_file, base16384_err_get_file_size,
+    base16384_err_invalid_commandline_parameter,
+    base16384_err_invalid_decoding_checksum, base16384_err_invalid_file_name,
+    base16384_err_map_input_file, base16384_err_ok,
+    base16384_err_open_input_file, base16384_err_read_file, base16384_err_t,
     base16384_err_write_file, pybase16384_64bits)
 
 from pathlib import Path
 
 ENCBUFSZ = BASE16384_ENCBUFSZ
 DECBUFSZ = BASE16384_DECBUFSZ
+FLAG_NOHEADER = BASE16384_FLAG_NOHEADER
+FLAG_SUM_CHECK_ON_REMAIN = BASE16384_FLAG_SUM_CHECK_ON_REMAIN
+SIMPLE_SUM_INIT_VALUE = BASE16384_SIMPLE_SUM_INIT_VALUE
 
 cdef inline bytes ensure_bytes(object inp):
     if isinstance(inp, unicode):
@@ -211,6 +219,14 @@ cdef inline str err_to_str(base16384_err_t ret):
         return "base16384_err_open_input_file"
     elif ret == base16384_err_map_input_file:
         return "base16384_err_map_input_file"
+    elif ret == base16384_err_read_file:
+        return "base16384_err_read_file"
+    elif ret == base16384_err_invalid_file_name:
+        return "base16384_err_invalid_file_name"
+    elif ret == base16384_err_invalid_commandline_parameter:
+        return "base16384_err_invalid_commandline_parameter"
+    elif ret == base16384_err_invalid_decoding_checksum:
+        return "base16384_err_invalid_decoding_checksum"
 
 cpdef inline encode_local_file(object inp, object out):
     cdef bytes inp_name = ensure_bytes(inp)
@@ -286,6 +302,87 @@ cpdef inline decode_fd(int inp, int out):
     try:
         with nogil:
             ret = b14_decode_fd(inp, out, encbuf, decbuf)
+        if ret != base16384_err_ok:
+            raise ValueError(err_to_str(ret))
+    finally:
+        PyMem_Free(encbuf)
+        PyMem_Free(decbuf)
+
+# detailed
+cpdef inline encode_local_file_detailed(object inp, object out, int flag):
+    cdef bytes inp_name = ensure_bytes(inp)
+    cdef bytes out_name = ensure_bytes(out)
+    cdef const char * inp_name_ptr = <const char *> inp_name
+    cdef const char * out_name_ptr = <const char *> out_name
+    cdef char * encbuf = <char*>PyMem_Malloc(<size_t>BASE16384_ENCBUFSZ)
+    if encbuf == NULL:
+        raise MemoryError
+    cdef char * decbuf = <char*>PyMem_Malloc(<size_t>BASE16384_DECBUFSZ)
+    if decbuf == NULL:
+        PyMem_Free(encbuf)
+        raise MemoryError
+    cdef base16384_err_t ret
+    try:
+        with nogil:
+            ret = b14_encode_file_detailed(inp_name_ptr, out_name_ptr, encbuf, decbuf, flag)
+        if ret !=  base16384_err_ok:
+            raise ValueError(err_to_str(ret))
+    finally:
+        PyMem_Free(encbuf)
+        PyMem_Free(decbuf)
+
+cpdef inline decode_local_file_detailed(object inp, object out, int flag):
+    cdef bytes inp_name = ensure_bytes(inp)
+    cdef bytes out_name = ensure_bytes(out)
+    cdef const char * inp_name_ptr = <const char *> inp_name
+    cdef const char * out_name_ptr = <const char *> out_name
+    cdef char * encbuf = <char*>PyMem_Malloc(<size_t>BASE16384_ENCBUFSZ)
+    if encbuf == NULL:
+        raise MemoryError
+    cdef char * decbuf = <char*>PyMem_Malloc(<size_t>BASE16384_DECBUFSZ)
+    if decbuf == NULL:
+        PyMem_Free(encbuf)
+        raise MemoryError
+    cdef base16384_err_t ret
+    try:
+        with nogil:
+            ret = b14_decode_file_detailed(inp_name_ptr, out_name_ptr, encbuf, decbuf, flag)
+        if ret !=  base16384_err_ok:
+            raise ValueError(err_to_str(ret))
+    finally:
+        PyMem_Free(encbuf)
+        PyMem_Free(decbuf)
+
+cpdef inline encode_fd_detailed(int inp, int out, int flag):
+    cdef char * encbuf = <char *> PyMem_Malloc(<size_t>BASE16384_ENCBUFSZ)
+    if encbuf == NULL:
+        raise MemoryError
+    cdef char * decbuf = <char *> PyMem_Malloc(<size_t>BASE16384_DECBUFSZ)
+    if decbuf == NULL:
+        PyMem_Free(encbuf)
+        raise MemoryError
+    cdef base16384_err_t ret
+    try:
+        with nogil:
+            ret = b14_encode_fd_detailed(inp, out, encbuf, decbuf, flag)
+        if ret != base16384_err_ok:
+            raise ValueError(err_to_str(ret))
+    finally:
+        PyMem_Free(encbuf)
+        PyMem_Free(decbuf)
+
+cpdef inline decode_fd_detailed(int inp, int out, int flag):
+    cdef char * encbuf = <char *> PyMem_Malloc(<size_t>BASE16384_ENCBUFSZ)
+    if encbuf == NULL:
+        raise MemoryError
+    cdef char * decbuf = <char *> PyMem_Malloc(<size_t>BASE16384_DECBUFSZ)
+    if decbuf == NULL:
+        PyMem_Free(encbuf)
+        raise MemoryError
+    cdef base16384_err_t ret
+    try:
+        with nogil:
+            ret = b14_decode_fd_detailed(inp, out, encbuf, decbuf, flag)
         if ret != base16384_err_ok:
             raise ValueError(err_to_str(ret))
     finally:

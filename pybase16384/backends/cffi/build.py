@@ -26,6 +26,7 @@ if sys.byteorder != "little":
 
 if CPUBIT == 64:
     macro_base.append(("CPUBIT64", None))
+    macro_base.append(("IS_64BIT_PROCESSOR", None))
 else:
     macro_base.append(("CPUBIT32", None))
 
@@ -41,6 +42,10 @@ enum base16384_err_t {
 	base16384_err_write_file,
 	base16384_err_open_input_file,
 	base16384_err_map_input_file,
+	base16384_err_read_file,
+    base16384_err_invalid_file_name,
+    base16384_err_invalid_commandline_parameter,
+    base16384_err_invalid_decoding_checksum
 };
 // base16384_err_t is the return value of base16384_en/decode_file
 typedef enum base16384_err_t base16384_err_t;
@@ -67,11 +72,27 @@ base16384_err_t base16384_decode_fp(FILE* input, FILE* output, char* encbuf, cha
 //    encbuf & decbuf must be no less than BASE16384_ENCBUFSZ & BASE16384_DECBUFSZ
 base16384_err_t base16384_decode_fd(int input, int output, char* encbuf, char* decbuf);
 
+int base16384_encode_unsafe(const char * data, int dlen, char * buf);
+int base16384_decode_unsafe(const char * data, int dlen, char * buf);
+
+base16384_err_t base16384_encode_file_detailed(const char* input, const char* output, char* encbuf, char* decbuf, int flag);
+base16384_err_t base16384_decode_file_detailed(const char* input, const char* output, char* encbuf, char* decbuf, int flag);
+base16384_err_t base16384_encode_fd_detailed(int input, int output, char* encbuf, char* decbuf, int flag);
+base16384_err_t base16384_decode_fd_detailed(int input, int output, char* encbuf, char* decbuf, int flag);
+base16384_err_t base16384_encode_fp_detailed(FILE* input, FILE* output, char* encbuf, char* decbuf, int flag);
+base16384_err_t base16384_decode_fp_detailed(FILE* input, FILE* output, char* encbuf, char* decbuf, int flag);
+
 int32_t pybase16384_64bits();
 
 int get_encsize();
 
 int get_decsize();
+
+int BASE16384_FLAG_NOHEADER_();
+
+int BASE16384_FLAG_SUM_CHECK_ON_REMAIN_();
+
+int BASE16384_SIMPLE_SUM_INIT_VALUE_();
     """
 )
 
@@ -92,6 +113,21 @@ int get_encsize()
 int get_decsize()
 {
     return BASE16384_DECBUFSZ;
+}
+
+int BASE16384_FLAG_NOHEADER_()
+{
+    return BASE16384_FLAG_NOHEADER;
+}
+
+int BASE16384_FLAG_SUM_CHECK_ON_REMAIN_()
+{
+    return BASE16384_FLAG_SUM_CHECK_ON_REMAIN;
+}
+
+int BASE16384_SIMPLE_SUM_INIT_VALUE_()
+{
+    return BASE16384_SIMPLE_SUM_INIT_VALUE;
 }
 """
 
