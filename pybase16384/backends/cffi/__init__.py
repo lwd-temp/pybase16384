@@ -17,6 +17,7 @@ FLAG_NOHEADER = lib.BASE16384_FLAG_NOHEADER_()
 FLAG_SUM_CHECK_ON_REMAIN = lib.BASE16384_FLAG_SUM_CHECK_ON_REMAIN_()
 SIMPLE_SUM_INIT_VALUE = lib.BASE16384_SIMPLE_SUM_INIT_VALUE_()
 
+
 # -----------------low level api------------------------------
 def _encode(data: bytes) -> bytes:
     length = len(data)
@@ -223,6 +224,7 @@ def decode_fd(inp: int, out: int) -> None:
     ret = lib.base16384_decode_fd(inp, out, encbuf, decbuf)
     if ret != lib.base16384_err_ok:
         raise ValueError(err_to_str(ret))
+
 
 # detail
 def encode_local_file_detailed(inp, out, flag: int) -> None:
