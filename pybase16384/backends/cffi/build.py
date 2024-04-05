@@ -74,6 +74,8 @@ base16384_err_t base16384_decode_fd(int input, int output, char* encbuf, char* d
 
 int base16384_encode_unsafe(const char * data, int dlen, char * buf);
 int base16384_decode_unsafe(const char * data, int dlen, char * buf);
+int base16384_encode_safe(const char * data, int dlen, char * buf);
+int base16384_decode_safe(const char * data, int dlen, char * buf);
 
 base16384_err_t base16384_encode_file_detailed(const char* input, const char* output, char* encbuf, char* decbuf, int flag);
 base16384_err_t base16384_decode_file_detailed(const char* input, const char* output, char* encbuf, char* decbuf, int flag);
@@ -92,7 +94,7 @@ int BASE16384_FLAG_NOHEADER_();
 
 int BASE16384_FLAG_SUM_CHECK_ON_REMAIN_();
 
-int BASE16384_SIMPLE_SUM_INIT_VALUE_();
+int BASE16384_FLAG_DO_SUM_CHECK_FORCELY_();
     """
 )
 
@@ -100,9 +102,9 @@ source = """
 #include "base16384.h"
 
 #ifdef CPUBIT32
-#define pybase16384_64bits() 0
+#define pybase16384_64bits() (0)
 #else
-#define pybase16384_64bits() 1
+#define pybase16384_64bits() (1)
 #endif
 
 int get_encsize()
@@ -125,9 +127,9 @@ int BASE16384_FLAG_SUM_CHECK_ON_REMAIN_()
     return BASE16384_FLAG_SUM_CHECK_ON_REMAIN;
 }
 
-int BASE16384_SIMPLE_SUM_INIT_VALUE_()
+int BASE16384_FLAG_DO_SUM_CHECK_FORCELY_()
 {
-    return BASE16384_SIMPLE_SUM_INIT_VALUE;
+    return BASE16384_FLAG_DO_SUM_CHECK_FORCELY;
 }
 """
 

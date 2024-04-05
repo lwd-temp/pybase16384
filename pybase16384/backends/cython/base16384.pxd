@@ -10,7 +10,7 @@ cdef extern from "base16384.h" nogil:
 
     int BASE16384_FLAG_NOHEADER
     int BASE16384_FLAG_SUM_CHECK_ON_REMAIN
-    int BASE16384_SIMPLE_SUM_INIT_VALUE
+    int BASE16384_FLAG_DO_SUM_CHECK_FORCELY
 
     ctypedef enum base16384_err_t:
         base16384_err_ok
@@ -29,11 +29,14 @@ cdef extern from "base16384.h" nogil:
 # decode_len calc min buf size to fill decode result
     int b14_decode_len "base16384_decode_len" (int dlen, int offset)
 
+    int b14_encode_safe "base16384_encode_safe" (const char * data, int dlen, char * buf)
 # encode data and write result into buf
     int b14_encode "base16384_encode" (const char* data, int dlen, char* buf)
 
     int b14_encode_unsafe "base16384_encode_unsafe" (const char * data, int dlen, char * buf)
 # decode data and write result into buf
+    int b14_decode_safe "base16384_decode_safe" (const char * data, int dlen, char * buf)
+
     int b14_decode "base16384_decode" (const char* data, int dlen, char* buf)
 
     int b14_decode_unsafe "base16384_decode_unsafe"(const char * data, int dlen, char * buf)
@@ -87,9 +90,9 @@ cdef extern from "base16384.h" nogil:
 cdef extern from * nogil:
     """
 #ifdef CPUBIT32
-#define pybase16384_64bits() 0
+#define pybase16384_64bits() (0)
 #else
-#define pybase16384_64bits() 1
+#define pybase16384_64bits() (1)
 #endif
     """
     int32_t pybase16384_64bits()
