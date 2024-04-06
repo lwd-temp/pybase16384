@@ -1,24 +1,28 @@
 # cython: language_level=3
 # cython: cdivision=True
-from cpython.bytes cimport PyBytes_AS_STRING, PyBytes_Check, PyBytes_Size
+from cpython.bytes cimport (PyBytes_AS_STRING, PyBytes_Check,
+                            PyBytes_FromStringAndSize, PyBytes_GET_SIZE)
 from cpython.mem cimport PyMem_Free, PyMem_Malloc
-from cpython.object cimport PyObject_HasAttrString
+from cpython.object cimport PyObject, PyObject_HasAttrString
 from libc.stdint cimport int32_t, uint8_t
+from libc.string cimport memcpy
 
 from pybase16384.backends.cython.base16384 cimport (
     BASE16384_DECBUFSZ, BASE16384_ENCBUFSZ,
     BASE16384_FLAG_DO_SUM_CHECK_FORCELY, BASE16384_FLAG_NOHEADER,
     BASE16384_FLAG_SUM_CHECK_ON_REMAIN, b14_decode, b14_decode_fd,
     b14_decode_fd_detailed, b14_decode_file, b14_decode_file_detailed,
-    b14_decode_len, b14_decode_safe, b14_encode, b14_encode_fd,
+    b14_decode_len, b14_decode_safe, b14_decode_stream,
+    b14_decode_stream_detailed, b14_encode, b14_encode_fd,
     b14_encode_fd_detailed, b14_encode_file, b14_encode_file_detailed,
-    b14_encode_len, b14_encode_safe, base16384_err_fopen_input_file,
+    b14_encode_len, b14_encode_safe, b14_encode_stream,
+    b14_encode_stream_detailed, base16384_err_fopen_input_file,
     base16384_err_fopen_output_file, base16384_err_get_file_size,
     base16384_err_invalid_commandline_parameter,
-    base16384_err_invalid_decoding_checksum, base16384_err_invalid_file_name,
+    base16384_err_invalid_decoding_checksum, base16384_err_invalid_file_name,base16384_io_function_t,
     base16384_err_map_input_file, base16384_err_ok,
     base16384_err_open_input_file, base16384_err_read_file, base16384_err_t,
-    base16384_err_write_file, pybase16384_64bits)
+    base16384_err_write_file, base16384_stream_t, pybase16384_64bits)
 
 from pathlib import Path
 
@@ -189,7 +193,7 @@ def encode_file(object input,
                 first_check = 0
                 if not PyBytes_Check(chunk):
                     raise TypeError(f"input must be a file-like rb object, got {type(input).__name__}")
-            size = PyBytes_Size(chunk)
+            size = PyBytes_GET_SIZE(chunk)
             if <int32_t> size < current_buf_len:  # 数据不够了 要减小一次读取的量
                 if buf_rate > 1:  # 重新设置一次读取的大小 重新设置流的位置 当然要是已经是一次读取7字节了 那就不能再变小了 直接encode吧
                     buf_rate = buf_rate / 2
@@ -236,7 +240,7 @@ def encode_file_safe(object input,
                 first_check = 0
                 if not PyBytes_Check(chunk):
                     raise TypeError(f"input must be a file-like rb object, got {type(input).__name__}")
-            size = PyBytes_Size(chunk)
+            size = PyBytes_GET_SIZE(chunk)
             if <int32_t> size < current_buf_len:  # 数据不够了 要减小一次读取的量
                 if buf_rate > 1:  # 重新设置一次读取的大小 重新设置流的位置 当然要是已经是一次读取7字节了 那就不能再变小了 直接encode吧
                     buf_rate = buf_rate / 2
@@ -281,7 +285,7 @@ def decode_file(object input,
     try:
         while True:
             chunk = input.read(current_buf_len)  # 8的倍数
-            size = PyBytes_Size(chunk)
+            size = PyBytes_GET_SIZE(chunk)
             if size == 0:
                 break
             if <int32_t> size < current_buf_len:  # 长度不够了
@@ -291,7 +295,7 @@ def decode_file(object input,
                     input.seek(-size, 1)
                     continue
             tmp = input.read(2)  # type: bytes
-            if PyBytes_Size(tmp) == 2:
+            if PyBytes_GET_SIZE(tmp) == 2:
                 if tmp[0] == 61:  # = stream完了   一次解码8n+2个字节
                     chunk += tmp
                     size += 2
@@ -333,7 +337,7 @@ def decode_file_safe(object input,
     try:
         while True:
             chunk = input.read(current_buf_len)  # 8的倍数
-            size = PyBytes_Size(chunk)
+            size = PyBytes_GET_SIZE(chunk)
             if size == 0:
                 break
             if <int32_t> size < current_buf_len:  # 长度不够了
@@ -343,7 +347,7 @@ def decode_file_safe(object input,
                     input.seek(-size, 1)
                     continue
             tmp = input.read(2)  # type: bytes
-            if PyBytes_Size(tmp) == 2:
+            if PyBytes_GET_SIZE(tmp) == 2:
                 if tmp[0] == 61:  # = stream完了   一次解码8n+2个字节
                     chunk += tmp
                     size += 2
@@ -536,6 +540,77 @@ cpdef inline decode_fd_detailed(int inp, int out, int flag):
     try:
         with nogil:
             ret = b14_decode_fd_detailed(inp, out, encbuf, decbuf, flag)
+        if ret != base16384_err_ok:
+            raise ValueError(err_to_str(ret))
+    finally:
+        PyMem_Free(encbuf)
+        PyMem_Free(decbuf)
+
+# stream
+cdef ssize_t b14_readcallback(const void *client_data, void *buffer, size_t count) except -100  with gil:
+    cdef object file = <object><PyObject*>client_data
+    cdef bytes data = file.read(count)
+    cdef char* data_ptr = PyBytes_AS_STRING(data)
+    cdef ssize_t data_size = <ssize_t>PyBytes_GET_SIZE(data)
+    memcpy(buffer, data_ptr, <size_t>data_size)
+    return data_size
+
+cdef ssize_t b14_writecallback(const void *client_data, const void *buffer, size_t count) except -100 with gil:
+    cdef object file = <object> <PyObject *> client_data
+    cdef bytes data = PyBytes_FromStringAndSize(<char*>buffer, <Py_ssize_t>count)
+    cdef ssize_t ret = <ssize_t>file.write(data)
+    return ret
+
+cpdef inline encode_stream_detailed(object inp, object out, int flag):
+    cdef char * encbuf = <char *> PyMem_Malloc(<size_t> BASE16384_ENCBUFSZ)
+    if encbuf == NULL:
+        raise MemoryError
+    cdef char * decbuf = <char *> PyMem_Malloc(<size_t> BASE16384_DECBUFSZ)
+    if decbuf == NULL:
+        PyMem_Free(encbuf)
+        raise MemoryError
+
+    cdef base16384_err_t ret
+
+    cdef base16384_stream_t inpstream = base16384_stream_t(f=base16384_io_function_t(reader=b14_readcallback),
+                                                           client_data=<const void *> inp)
+    # inpstream.f.reader = b14_readcallback
+    # inpstream.client_data = <const void*>inp
+
+    cdef base16384_stream_t outstream = base16384_stream_t(f=base16384_io_function_t(writer=b14_writecallback),
+                                                           client_data=<const void *> out)
+    # outstream.f.writer = b14_writecallback
+    # outstream.client_data = <const void*>out
+    try:
+        with nogil:
+            ret = b14_encode_stream_detailed(&inpstream, &outstream, encbuf, decbuf, flag)
+        if ret != base16384_err_ok:
+            raise ValueError(err_to_str(ret))
+    finally:
+        PyMem_Free(encbuf)
+        PyMem_Free(decbuf)
+
+cpdef inline decode_stream_detailed(object inp, object out, int flag):
+    cdef char * encbuf = <char *> PyMem_Malloc(<size_t> BASE16384_ENCBUFSZ)
+    if encbuf == NULL:
+        raise MemoryError
+    cdef char * decbuf = <char *> PyMem_Malloc(<size_t> BASE16384_DECBUFSZ)
+    if decbuf == NULL:
+        PyMem_Free(encbuf)
+        raise MemoryError
+
+    cdef base16384_err_t ret
+
+    cdef base16384_stream_t inpstream = base16384_stream_t(f=base16384_io_function_t(reader=b14_readcallback),client_data= <const void*>inp)
+    # inpstream.f.reader = b14_readcallback
+    # inpstream.client_data = <const void*>inp
+
+    cdef base16384_stream_t outstream = base16384_stream_t(f=base16384_io_function_t(writer=b14_writecallback),client_data= <const void*>out)
+    # outstream.f.writer = b14_writecallback
+    # outstream.client_data = <const void*>out
+    try:
+        with nogil:
+            ret = b14_decode_stream_detailed(&inpstream, &outstream, encbuf, decbuf, flag)
         if ret != base16384_err_ok:
             raise ValueError(err_to_str(ret))
     finally:

@@ -85,7 +85,22 @@ cdef extern from "base16384.h" nogil:
     # base16384_decode_fd_detailed decodes input fd to output fd.
     #    encbuf & decbuf must be no less than BASE16384_ENCBUFSZ & BASE16384_DECBUFSZ
     base16384_err_t b14_decode_fd_detailed "base16384_decode_fd_detailed" (int input, int output, char* encbuf, char* decbuf, int flag)
+    # stream
+    ctypedef ssize_t (*base16384_reader_t) (const void *client_data, void *buffer, size_t count) except -100
+    ctypedef ssize_t (*base16384_writer_t) (const void *client_data, const void *buffer, size_t count) except -100
 
+    ctypedef union base16384_io_function_t:
+        base16384_reader_t reader
+        base16384_writer_t writer
+
+    ctypedef struct base16384_stream_t:
+        const base16384_io_function_t f
+        const void* client_data
+
+    base16384_err_t b14_encode_stream "base16384_encode_stream"(base16384_stream_t* input, base16384_stream_t*  output, char* encbuf, char* decbuf)
+    base16384_err_t b14_encode_stream_detailed "base16384_encode_stream_detailed"(base16384_stream_t* input, base16384_stream_t*  output, char* encbuf, char* decbuf, int flag)
+    base16384_err_t b14_decode_stream "base16384_decode_stream"(base16384_stream_t* input, base16384_stream_t*  output, char* encbuf, char* decbuf)
+    base16384_err_t b14_decode_stream_detailed "base16384_decode_stream_detailed"(base16384_stream_t* input, base16384_stream_t*  output, char* encbuf, char* decbuf, int flag)
 
 cdef extern from * nogil:
     """

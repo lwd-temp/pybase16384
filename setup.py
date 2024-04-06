@@ -62,6 +62,7 @@ extensions = [
             "pybase16384/backends/cython/_core.pyx",
             f"./base16384/base14{CPUBIT}.c",
             "./base16384/file.c",
+            "./base16384/wrap.c",
         ],
         include_dirs=[f"./base16384"],
         library_dirs=[f"./base16384"],
