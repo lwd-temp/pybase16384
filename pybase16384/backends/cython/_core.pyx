@@ -19,10 +19,11 @@ from pybase16384.backends.cython.base16384 cimport (
     b14_encode_stream_detailed, base16384_err_fopen_input_file,
     base16384_err_fopen_output_file, base16384_err_get_file_size,
     base16384_err_invalid_commandline_parameter,
-    base16384_err_invalid_decoding_checksum, base16384_err_invalid_file_name,base16384_io_function_t,
+    base16384_err_invalid_decoding_checksum, base16384_err_invalid_file_name,
     base16384_err_map_input_file, base16384_err_ok,
     base16384_err_open_input_file, base16384_err_read_file, base16384_err_t,
-    base16384_err_write_file, base16384_stream_t, pybase16384_64bits)
+    base16384_err_write_file, base16384_io_function_t, base16384_stream_t,
+    pybase16384_64bits)
 
 from pathlib import Path
 
@@ -573,12 +574,12 @@ cpdef inline encode_stream_detailed(object inp, object out, int flag):
     cdef base16384_err_t ret
 
     cdef base16384_stream_t inpstream = base16384_stream_t(f=base16384_io_function_t(reader=b14_readcallback),
-                                                           client_data=<const void *> inp)
+                                                           client_data=<void *> inp)
     # inpstream.f.reader = b14_readcallback
     # inpstream.client_data = <const void*>inp
 
     cdef base16384_stream_t outstream = base16384_stream_t(f=base16384_io_function_t(writer=b14_writecallback),
-                                                           client_data=<const void *> out)
+                                                           client_data=<void *> out)
     # outstream.f.writer = b14_writecallback
     # outstream.client_data = <const void*>out
     try:
@@ -601,11 +602,11 @@ cpdef inline decode_stream_detailed(object inp, object out, int flag):
 
     cdef base16384_err_t ret
 
-    cdef base16384_stream_t inpstream = base16384_stream_t(f=base16384_io_function_t(reader=b14_readcallback),client_data= <const void*>inp)
+    cdef base16384_stream_t inpstream = base16384_stream_t(f=base16384_io_function_t(reader=b14_readcallback),client_data= <void*>inp)
     # inpstream.f.reader = b14_readcallback
     # inpstream.client_data = <const void*>inp
 
-    cdef base16384_stream_t outstream = base16384_stream_t(f=base16384_io_function_t(writer=b14_writecallback),client_data= <const void*>out)
+    cdef base16384_stream_t outstream = base16384_stream_t(f=base16384_io_function_t(writer=b14_writecallback),client_data= <void*>out)
     # outstream.f.writer = b14_writecallback
     # outstream.client_data = <const void*>out
     try:

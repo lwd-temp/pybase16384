@@ -94,8 +94,8 @@ cdef extern from "base16384.h" nogil:
         base16384_writer_t writer
 
     ctypedef struct base16384_stream_t:
-        const base16384_io_function_t f
-        const void* client_data
+        base16384_io_function_t f
+        void* client_data
 
     base16384_err_t b14_encode_stream "base16384_encode_stream"(base16384_stream_t* input, base16384_stream_t*  output, char* encbuf, char* decbuf)
     base16384_err_t b14_encode_stream_detailed "base16384_encode_stream_detailed"(base16384_stream_t* input, base16384_stream_t*  output, char* encbuf, char* decbuf, int flag)

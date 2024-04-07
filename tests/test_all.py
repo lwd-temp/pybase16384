@@ -2,6 +2,7 @@ import sys
 
 sys.path.append(".")
 import unittest
+from io import BytesIO
 from random import randint
 from unittest import TestCase
 
@@ -78,6 +79,19 @@ class Test(TestCase):
             value = bytes([randint(0, 255) for _ in range(length)])
             cnt = bs._encode_into_safe(value, dst)
             self.assertEqual(bytes(dst[:cnt]), bs._encode(value))
+
+    def test_encode_stream(self):
+        for i in range(10000):
+            length = randint(1, 200)
+            value = bytes([randint(0, 255) for _ in range(length)])
+            inp = BytesIO(value)
+            out = BytesIO()
+            bs.encode_stream_detailed(inp, out, bs.FLAG_SUM_CHECK_ON_REMAIN)
+            encoded = out.getvalue()
+            inp = BytesIO(encoded)
+            out = BytesIO()
+            bs.decode_stream_detailed(inp, out, bs.FLAG_SUM_CHECK_ON_REMAIN)
+            self.assertEqual(out.getvalue(), value)
 
 
 if __name__ == "__main__":

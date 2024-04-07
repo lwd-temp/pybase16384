@@ -37,6 +37,7 @@ if not _should_use_cffi():
         decode_len,
         decode_local_file,
         decode_local_file_detailed,
+        decode_stream_detailed,
         encode_fd,
         encode_fd_detailed,
         encode_file,
@@ -44,6 +45,7 @@ if not _should_use_cffi():
         encode_len,
         encode_local_file,
         encode_local_file_detailed,
+        encode_stream_detailed,
         is_64bits,
     )
 else:
@@ -68,6 +70,7 @@ else:
         decode_len,
         decode_local_file,
         decode_local_file_detailed,
+        decode_stream_detailed,
         encode_fd,
         encode_fd_detailed,
         encode_file,
@@ -75,6 +78,7 @@ else:
         encode_len,
         encode_local_file,
         encode_local_file_detailed,
+        encode_stream_detailed,
         is_64bits,
     )
 

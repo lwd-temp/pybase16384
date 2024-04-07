@@ -95,6 +95,39 @@ int BASE16384_FLAG_NOHEADER_();
 int BASE16384_FLAG_SUM_CHECK_ON_REMAIN_();
 
 int BASE16384_FLAG_DO_SUM_CHECK_FORCELY_();
+
+typedef ssize_t (*base16384_reader_t)(const void *client_data, void *buffer, size_t count);
+
+/**
+ * @brief custom writer function interface
+ * @param client_data the data pointer defined by the client
+ * @param buffer from where read data
+ * @param count write bytes count
+ * @return the size written
+*/
+typedef ssize_t (*base16384_writer_t)(const void *client_data, const void *buffer, size_t count);
+
+union base16384_io_function_t {
+	base16384_reader_t reader;
+	base16384_writer_t writer;
+};
+typedef union base16384_io_function_t base16384_io_function_t;
+
+struct base16384_stream_t {
+	base16384_io_function_t f;
+	void *client_data;
+};
+/**
+ * @brief for stream encode/decode
+*/
+typedef struct base16384_stream_t base16384_stream_t;
+
+base16384_err_t base16384_encode_stream_detailed(base16384_stream_t* input, base16384_stream_t*  output, char* encbuf, char* decbuf, int flag);
+base16384_err_t base16384_decode_stream_detailed(base16384_stream_t* input, base16384_stream_t*  output, char* encbuf, char* decbuf, int flag);
+
+extern "Python" ssize_t b14_readcallback(const void *client_data, void *buffer, size_t count);
+
+extern "Python" ssize_t b14_writecallback(const void *client_data, const void *buffer, size_t count);
     """
 )
 
@@ -136,7 +169,11 @@ int BASE16384_FLAG_DO_SUM_CHECK_FORCELY_()
 ffibuilder.set_source(
     "pybase16384.backends.cffi._core",
     source,
-    sources=[f"./base16384/base14{CPUBIT}.c", "./base16384/file.c"],
+    sources=[
+        f"./base16384/base14{CPUBIT}.c",
+        "./base16384/file.c",
+        "./base16384/wrap.c",
+    ],
     include_dirs=["./base16384"],
     define_macros=macro_base,
 )

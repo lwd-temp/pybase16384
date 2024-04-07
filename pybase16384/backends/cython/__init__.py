@@ -22,6 +22,7 @@ from pybase16384.backends.cython._core import (
     decode_len,
     decode_local_file,
     decode_local_file_detailed,
+    decode_stream_detailed,
     encode_fd,
     encode_fd_detailed,
     encode_file,
@@ -29,5 +30,6 @@ from pybase16384.backends.cython._core import (
     encode_len,
     encode_local_file,
     encode_local_file_detailed,
+    encode_stream_detailed,
     is_64bits,
 )

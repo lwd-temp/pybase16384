@@ -391,3 +391,60 @@ def decode_fd_detailed(inp: int, out: int, flag: int) -> None:
     ret = lib.base16384_decode_fd_detailed(inp, out, encbuf, decbuf, flag)
     if ret != lib.base16384_err_ok:
         raise ValueError(err_to_str(ret))
+
+
+# stream
+@ffi.def_extern()
+def b14_readcallback(client_data, buffer, count: int):
+    file = ffi.from_handle(client_data)
+    data: bytes = file.read(count)
+    data_size: int = len(data)
+    ffi.memmove(buffer, data, data_size)
+    return data_size
+
+
+@ffi.def_extern()
+def b14_writecallback(client_data, buffer, count: int):
+    file = ffi.from_handle(client_data)
+    data: bytes = ffi.unpack(ffi.cast("char*", buffer), count)
+    return file.write(data)
+
+
+def encode_stream_detailed(inp, out, flag: int):
+    encbuf = ffi.new(f"char[{ENCBUFSZ}]")
+    decbuf = ffi.new(f"char[{DECBUFSZ}]")
+
+    inpstream = ffi.new(f"base16384_stream_t *")
+    inpstream.f.reader = lib.b14_readcallback
+    handle_inp = ffi.new_handle(inp)
+    inpstream.client_data = handle_inp
+
+    outstream = ffi.new(f"base16384_stream_t *")
+    outstream.f.writer = lib.b14_writecallback
+    handle_out = ffi.new_handle(out)
+    outstream.client_data = handle_out
+    ret = lib.base16384_encode_stream_detailed(
+        inpstream, outstream, encbuf, decbuf, flag
+    )
+    if ret != lib.base16384_err_ok:
+        raise ValueError(err_to_str(ret))
+
+
+def decode_stream_detailed(inp, out, flag: int):
+    encbuf = ffi.new(f"char[{ENCBUFSZ}]")
+    decbuf = ffi.new(f"char[{DECBUFSZ}]")
+
+    inpstream = ffi.new(f"base16384_stream_t *")
+    inpstream.f.reader = lib.b14_readcallback
+    handle_inp = ffi.new_handle(inp)
+    inpstream.client_data = handle_inp
+
+    outstream = ffi.new(f"base16384_stream_t *")
+    outstream.f.writer = lib.b14_writecallback
+    handle_out = ffi.new_handle(out)
+    outstream.client_data = handle_out
+    ret = lib.base16384_decode_stream_detailed(
+        inpstream, outstream, encbuf, decbuf, flag
+    )
+    if ret != lib.base16384_err_ok:
+        raise ValueError(err_to_str(ret))
