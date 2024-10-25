@@ -549,7 +549,7 @@ cpdef inline decode_fd_detailed(int inp, int out, int flag):
 
 # stream
 cdef ssize_t b14_readcallback(const void *client_data, void *buffer, size_t count) except -100  with gil:
-    cdef object file = <object><PyObject*>client_data
+    cdef object file = <object>client_data
     cdef bytes data = file.read(count)
     cdef char* data_ptr = PyBytes_AS_STRING(data)
     cdef ssize_t data_size = <ssize_t>PyBytes_GET_SIZE(data)
@@ -557,7 +557,7 @@ cdef ssize_t b14_readcallback(const void *client_data, void *buffer, size_t coun
     return data_size
 
 cdef ssize_t b14_writecallback(const void *client_data, const void *buffer, size_t count) except -100 with gil:
-    cdef object file = <object> <PyObject *> client_data
+    cdef object file = <object>client_data
     cdef bytes data = PyBytes_FromStringAndSize(<char*>buffer, <Py_ssize_t>count)
     cdef ssize_t ret = <ssize_t>file.write(data)
     return ret

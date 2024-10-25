@@ -1,6 +1,7 @@
 """
 Copyright (c) 2008-2021 synodriver <synodriver@gmail.com>
 """
+
 from pathlib import Path
 from typing import IO
 
@@ -105,11 +106,15 @@ def encode_file(input: IO, output: IO, write_head: bool = False, buf_rate: int =
         output.write(b"\xfe\xff")
 
     current_buf_len: int = buf_rate * 7  # 一次读取这么多字节
-    output_size: int = encode_len(current_buf_len) + 16  # 因为encode_len不是单调的 这16备用
+    output_size: int = (
+        encode_len(current_buf_len) + 16
+    )  # 因为encode_len不是单调的 这16备用
     output_buf = ffi.new(f"char[{output_size}]")
     if output_buf == ffi.NULL:
         raise MemoryError
-    first_check: int = 1  # 检查一次就行了 怎么可能出现第一次读出来是bytes 以后又变卦了的对象呢 不会吧不会吧
+    first_check: int = (
+        1  # 检查一次就行了 怎么可能出现第一次读出来是bytes 以后又变卦了的对象呢 不会吧不会吧
+    )
     while True:
         chunk = input.read(current_buf_len)
         if first_check:
@@ -120,7 +125,9 @@ def encode_file(input: IO, output: IO, write_head: bool = False, buf_rate: int =
                 )
         size = len(chunk)
         if size < current_buf_len:  # 数据不够了 要减小一次读取的量
-            if buf_rate > 1:  # 重新设置一次读取的大小 重新设置流的位置 当然要是已经是一次读取7字节了 那就不能再变小了 直接encode吧
+            if (
+                buf_rate > 1
+            ):  # 重新设置一次读取的大小 重新设置流的位置 当然要是已经是一次读取7字节了 那就不能再变小了 直接encode吧
                 buf_rate = buf_rate // 2
                 current_buf_len = buf_rate * 7
                 input.seek(-size, 1)
@@ -149,11 +156,15 @@ def encode_file_safe(
         output.write(b"\xfe\xff")
 
     current_buf_len: int = buf_rate * 7  # 一次读取这么多字节
-    output_size: int = encode_len(current_buf_len)  # 因为encode_len不是单调的 safe不用加16
+    output_size: int = encode_len(
+        current_buf_len
+    )  # 因为encode_len不是单调的 safe不用加16
     output_buf = ffi.new(f"char[{output_size}]")
     if output_buf == ffi.NULL:
         raise MemoryError
-    first_check: int = 1  # 检查一次就行了 怎么可能出现第一次读出来是bytes 以后又变卦了的对象呢 不会吧不会吧
+    first_check: int = (
+        1  # 检查一次就行了 怎么可能出现第一次读出来是bytes 以后又变卦了的对象呢 不会吧不会吧
+    )
     while True:
         chunk = input.read(current_buf_len)
         if first_check:
@@ -164,7 +175,9 @@ def encode_file_safe(
                 )
         size = len(chunk)
         if size < current_buf_len:  # 数据不够了 要减小一次读取的量
-            if buf_rate > 1:  # 重新设置一次读取的大小 重新设置流的位置 当然要是已经是一次读取7字节了 那就不能再变小了 直接encode吧
+            if (
+                buf_rate > 1
+            ):  # 重新设置一次读取的大小 重新设置流的位置 当然要是已经是一次读取7字节了 那就不能再变小了 直接encode吧
                 buf_rate = buf_rate // 2
                 current_buf_len = buf_rate * 7
                 input.seek(-size, 1)

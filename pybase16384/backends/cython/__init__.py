@@ -1,6 +1,7 @@
 """
 Copyright (c) 2008-2021 synodriver <synodriver@gmail.com>
 """
+
 from pybase16384.backends.cython._core import (
     DECBUFSZ,
     ENCBUFSZ,

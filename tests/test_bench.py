@@ -36,9 +36,11 @@ encoding, decoding = (
             )
         )(
             input_string[
-                : None
-                if input_string and 0x4E00 <= ord(input_string[-1]) <= 0x8DFF
-                else -1
+                : (
+                    None
+                    if input_string and 0x4E00 <= ord(input_string[-1]) <= 0x8DFF
+                    else -1
+                )
             ],
             (
                 ord(input_string[-1]) - 0x3D00
