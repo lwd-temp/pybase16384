@@ -82,7 +82,7 @@ else:
         is_64bits,
     )
 
-__version__ = "0.3.7"
+__version__ = "0.3.8"
 
 
 def encode(data: bytes) -> bytes:

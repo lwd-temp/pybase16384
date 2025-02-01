@@ -3,6 +3,7 @@ import os
 import platform
 import re
 import sys
+import sysconfig
 from collections import defaultdict
 
 try:
@@ -56,11 +57,7 @@ if CPUBIT == 64:
 else:
     macro_base.append(("CPUBIT32", None))
 
-if (
-    sys.version_info > (3, 13, 0)
-    and hasattr(sys, "_is_gil_enabled")
-    and not sys._is_gil_enabled()
-):
+if sysconfig.get_config_var("Py_GIL_DISABLED"):
     print("build nogil")
     macro_base.append(
         ("Py_GIL_DISABLED", "1"),
