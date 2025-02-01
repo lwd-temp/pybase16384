@@ -14,7 +14,7 @@ jobs:
     env:
       CIBW_BEFORE_BUILD: pip install -r requirements.txt
       CIBW_ARCHS_LINUX: "x86_64 aarch64"
-      CIBW_ARCHS_WINDOWS: "AMD64 x86"
+      CIBW_ARCHS_WINDOWS: "AMD64"
       CIBW_ARCHS_MACOS: "x86_64 universal2 arm64"
       CIBW_ENVIRONMENT: USE-CYTHON="1" USE-CFFI="1"
       CIBW_PROJECT_REQUIRES_PYTHON: ">=3.8"
