@@ -18,13 +18,14 @@ jobs:
       CIBW_ARCHS_MACOS: "x86_64 universal2 arm64"
       CIBW_ENVIRONMENT: USE-CYTHON="1" USE-CFFI="1"
       CIBW_PROJECT_REQUIRES_PYTHON: ">=3.8"
+      CIBW_SKIP: "pp39-win_amd64 pp310-win_amd64"
     steps:
     - uses: actions/checkout@v4
     - name: Check out recursively
       run: git submodule update --init --recursive
     - uses: actions/setup-python@v5
       with:
-        python-version: "3.10"
+        python-version: "3.11"
     - name: Set up QEMU
       if: runner.os == 'Linux'
       uses: docker/setup-qemu-action@v3
